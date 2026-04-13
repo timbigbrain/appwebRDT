@@ -21,7 +21,7 @@ with st.form("suivi_quotidien"):
     m5 = st.checkbox("Transmission équipe")
     
     st.write("---")
-    commentaire = st.text_area("Observations particulières")
+    commentaire = st.text_area("Observations particulières :")
     
     submit = st.form_submit_button("Valider la journée", use_container_width=True)
 
