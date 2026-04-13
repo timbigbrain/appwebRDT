@@ -8,7 +8,7 @@ st.title("🕒 Suivi quotidien")
 st.write("Résidence des Tilleuls - CCAS de Vindry-sur-Turdine")
 
 with st.form("suivi_quotidien"):
-    nom = st.selectbox("Employé(e)", ["Jean", "Marie", "Paul", "Julie"])
+    nom = st.selectbox("Employé(e)", ["Thierry"])
     
     st.write("---")
     st.subheader("Missions réalisées aujourd'hui :")
