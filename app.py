@@ -7,11 +7,8 @@ st.set_page_config(page_title="Traçabilité Tilleuls", layout="wide")
 
 st.title("🕒 Suivi des interventions (Sauvegarde Cloud)")
 
-# Connexion au Google Sheet
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-# Lecture des données existantes
-df_existant = conn.read(ttl=0) # ttl=0 pour forcer la mise à jour immédiate
+url = "https://docs.google.com/spreadsheets/d/TON_ID_ICI/export?format=csv"
+df_existant = pd.read_csv(url)
 
 with st.form("form_interventions", clear_on_submit=True):
     nom = st.selectbox("👤 Employé(e)", ["Jean", "Marie", "Paul", "Julie"])
