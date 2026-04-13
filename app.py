@@ -47,4 +47,4 @@ with st.form("form_complet"):
         heure = maintenant.strftime("%H:%M")
         
         st.toast(f"Bravo {nom} ! Tes missions ont été enregistrées le {date} à {heure}.", icon="👏")
-        st.balloons()
+        st.snow()
