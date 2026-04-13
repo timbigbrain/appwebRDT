@@ -36,6 +36,6 @@ with st.form("suivi_quotidien"):
         
         date_heure = datetime.now().strftime("%d/%m/%Y %H:%M")
         
-        st.success(f"Bravo {nom} ! Tes missions ont été enregistrées le {date} à {heure}.")
+        st.success(f"Bravo {nom} ! Tes missions ont été enregistrées le {date_heure}.")
         st.write(f"Actions validées : {', '.join(missions_faites)}")
         st.balloons()
