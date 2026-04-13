@@ -46,5 +46,5 @@ with st.form("form_complet"):
         date = maintenant.strftime("%d/%m/%Y")
         heure = maintenant.strftime("%H:%M")
         
-        st.success(f"Bravo {nom} ! Tes missions ont été enregistrées le {date} à {heure}.")
+        st.toast(f"Bravo {nom} ! Tes missions ont été enregistrées le {date} à {heure}.", icon="👏")
         st.balloons()
