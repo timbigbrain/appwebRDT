@@ -4,28 +4,38 @@ from datetime import datetime
 
 st.set_page_config(page_title="Traçabilité Tilleuls", page_icon="🕒")
 
-st.title("🕒 Suivi des interventions")
+st.title("🕒 Suivi quotidien")
 st.write("Résidence des Tilleuls - CCAS de Vindry-sur-Turdine")
 
-# --- INTERFACE DE SAISIE ---
-with st.container(border=True):
+with st.form("suivi_quotidien"):
     nom = st.selectbox("Employé(e)", ["Jean", "Marie", "Paul", "Julie"])
-    action = st.selectbox("Tâche réalisée", [
-        "Entretien chambre", 
-        "Distribution repas", 
-        "Aide à la toilette", 
-        "Animation",
-        "Autre"
-    ])
-    commentaire = st.text_area("Observations")
     
-    if st.button("Valider l'enregistrement", use_container_width=True):
-        date_heure = datetime.now().strftime("%d/%m/%Y %H:%M")
-        # Pour l'instant on affiche, l'étape suivante sera de sauvegarder
-        st.success(f"Enregistré ! {nom} - {action} à {date_heure}")
-        st.balloons()
+    st.write("---")
+    st.subheader("Missions réalisées aujourd'hui :")
+    
+    # On crée des cases à cocher pour chaque mission
+    m1 = st.checkbox("Entretien chambre")
+    m2 = st.checkbox("Distribution repas")
+    m3 = st.checkbox("Aide à la toilette")
+    m4 = st.checkbox("Animation / Activité")
+    m5 = st.checkbox("Transmission équipe")
+    
+    st.write("---")
+    commentaire = st.text_area("Observations particulières")
+    
+    submit = st.form_submit_button("Valider la journée", use_container_width=True)
 
-# --- HISTORIQUE (Aperçu) ---
-st.divider()
-st.subheader("Dernières interventions")
-st.info("Les données seront bientôt sauvegardées dans une base de données SQL.")
+    if submit:
+        # On liste les missions cochées
+        missions_faites = []
+        if m1: missions_faites.append("Entretien chambre")
+        if m2: missions_faites.append("Distribution repas")
+        if m3: missions_faites.append("Aide à la toilette")
+        if m4: missions_faites.append("Animation")
+        if m5: missions_faites.append("Transmission")
+        
+        date_heure = datetime.now().strftime("%d/%m/%Y %H:%M")
+        
+        st.success(f"Bravo {nom} ! Tes missions ont été enregistrées à {date_heure}.")
+        st.write(f"Actions validées : {', '.join(missions_faites)}")
+        st.balloons()
