@@ -5,7 +5,7 @@ from datetime import datetime
 st.set_page_config(page_title="Traçabilité Tilleuls", layout="wide") # "wide" utilise tout l'écran
 
 st.title("🕒 Feuille de route quotidienne")
-st.write("Résidence des Tilleuls - CCAS de Vindry-sur-Turdine")
+st.write("Résidence des Tilleuls")
 
 with st.form("form_complet"):
     nom = st.selectbox("👤 Employé(e)", ["Thierry"])
