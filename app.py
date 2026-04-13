@@ -93,3 +93,17 @@ if not df.empty:
     st.dataframe(df, use_container_width=True)
 else:
     st.info("Aucune donnée enregistrée pour le moment.")
+# --- BOUTON DE RÉCUPÉRATION POUR DB BROWSER ---
+st.sidebar.divider()
+st.sidebar.subheader("🛠️ Administration")
+
+# On lit le fichier .db en binaire
+with open("suivi_residence.db", "rb") as f:
+    st.sidebar.download_button(
+        label="📥 Télécharger la base (.db)",
+        data=f,
+        file_name="suivi_residence_export.db",
+        mime="application/x-sqlite3"
+    )
+
+st.sidebar.info("Utilisez ce fichier avec 'DB Browser for SQLite' sur votre PC.")
