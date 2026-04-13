@@ -1,39 +1,23 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
-import sqlite3
 from datetime import datetime
-
-# --- CONFIGURATION DE LA BASE DE DONNÉES ---
-def init_db():
-    conn = sqlite3.connect('suivi_residence.db')
-    c = conn.cursor()
-    # On crée la table si elle n'existe pas encore
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS interventions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT,
-            heure TEXT,
-            employe TEXT,
-            missions TEXT,
-            observations TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-init_db()
 
 st.set_page_config(page_title="Traçabilité Tilleuls", layout="wide")
 
-st.title("🕒 Suivi des interventions")
+st.title("🕒 Suivi des interventions (Sauvegarde Cloud)")
 
-# --- FORMULAIRE DE SAISIE ---
+# Connexion au Google Sheet
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# Lecture des données existantes
+df_existant = conn.read(ttl=0) # ttl=0 pour forcer la mise à jour immédiate
+
 with st.form("form_interventions", clear_on_submit=True):
     nom = st.selectbox("👤 Employé(e)", ["Jean", "Marie", "Paul", "Julie"])
     
     st.divider()
     col1, col2, col3 = st.columns(3)
-
     with col1:
         st.subheader("🧼 Soins")
         h1 = st.checkbox("Toilette")
@@ -48,62 +32,32 @@ with st.form("form_interventions", clear_on_submit=True):
         c2 = st.checkbox("Animation")
 
     commentaire = st.text_area("📝 Observations")
-    
-    submit = st.form_submit_button("✅ Enregistrer")
+    submit = st.form_submit_button("✅ Enregistrer dans Google Sheets", use_container_width=True)
 
     if submit:
-        # 1. On prépare les données
+        # Préparation de la nouvelle ligne
         maintenant = datetime.now()
         date = maintenant.strftime("%d/%m/%Y")
         heure = maintenant.strftime("%H:%M")
         
-        # Liste des missions cochées
-        missions_list = []
-        if h1: missions_list.append("Toilette")
-        if h2: missions_list.append("Habillage")
-        if r1: missions_list.append("Aide repas")
-        if r2: missions_list.append("Goûter")
-        if c1: missions_list.append("Lit")
-        if c2: missions_list.append("Animation")
-        missions_finales = ", ".join(missions_list)
+        missions_list = [m for m, checked in zip(["Toilette", "Habillage", "Repas", "Goûter", "Lit", "Animation"], [h1, h2, r1, r2, c1, c2]) if checked]
+        
+        nouvelle_donnee = pd.DataFrame([{
+            "Date": date,
+            "Heure": heure,
+            "Employe": nom,
+            "Missions": ", ".join(missions_list),
+            "Observations": commentaire
+        }])
 
-        # 2. On écrit dans la base SQL
-        conn = sqlite3.connect('suivi_residence.db')
-        c = conn.cursor()
-        c.execute('''
-            INSERT INTO interventions (date, heure, employe, missions, observations)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (date, heure, nom, missions_finales, commentaire))
-        conn.commit()
-        conn.close()
+        # Fusion avec l'ancien tableau et mise à jour
+        df_mis_a_jour = pd.concat([df_existant, nouvelle_donnee], ignore_index=True)
+        conn.update(data=df_mis_a_jour)
+        
+        st.success(f"Données envoyées sur Google Sheets ! Bravo {nom}.")
+        st.snow()
 
-        st.success(f"Enregistré le {date} à {heure}")
-        st.balloons()
-
-# --- PARTIE HISTORIQUE (POUR LE TUTEUR) ---
+# Affichage de l'historique en direct du Google Sheet
 st.divider()
-st.subheader("📊 Historique des dernières 24h")
-
-conn = sqlite3.connect('suivi_residence.db')
-# On récupère les données avec Pandas (très puissant pour les tableaux)
-df = pd.read_sql_query("SELECT date, heure, employe, missions, observations FROM interventions ORDER BY id DESC", conn)
-conn.close()
-
-if not df.empty:
-    st.dataframe(df, use_container_width=True)
-else:
-    st.info("Aucune donnée enregistrée pour le moment.")
-# --- BOUTON DE RÉCUPÉRATION POUR DB BROWSER ---
-st.sidebar.divider()
-st.sidebar.subheader("🛠️ Administration")
-
-# On lit le fichier .db en binaire
-with open("suivi_residence.db", "rb") as f:
-    st.sidebar.download_button(
-        label="📥 Télécharger la base (.db)",
-        data=f,
-        file_name="suivi_residence_export.db",
-        mime="application/x-sqlite3"
-    )
-
-st.sidebar.info("Utilisez ce fichier avec 'DB Browser for SQLite' sur votre PC.")
+st.subheader("📊 Historique en temps réel (Google Sheets)")
+st.dataframe(df_existant, use_container_width=True)
