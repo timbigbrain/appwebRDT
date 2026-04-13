@@ -8,7 +8,7 @@ st.title("🕒 Feuille de route quotidienne")
 st.write("Résidence des Tilleuls - CCAS de Vindry-sur-Turdine")
 
 with st.form("form_complet"):
-    nom = st.selectbox("👤 Employé(e)", ["[Thierry]")
+    nom = st.selectbox("👤 Employé(e)", ["Thierry"])
     
     st.divider()
     
