@@ -235,7 +235,8 @@ with tab2:
             
             csv = df.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Télécharger CSV (Excel)", data=csv, file_name="export_tilleuls.csv", mime="text/csv")
-        else:
+     else:
             st.info("Aucune donnée enregistrée.")
     elif password != "":
         st.error("Code incorrect")
+# FIN DU FICHIER (ne rien ajouter ici)
