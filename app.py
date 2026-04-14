@@ -2,17 +2,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 from datetime import datetime
-# --- BOUTON DE NETTOYAGE (DANGEREUX) ---
-st.divider()
-st.subheader("⚠️ Zone de maintenance")
-if st.button("🗑️ Effacer tout l'historique (Action irréversible)"):
-        conn = sqlite3.connect('suivi_tilleuls.db')
-        c = conn.cursor()
-        c.execute('DELETE FROM interventions') # Supprime toutes les lignes
-        conn.commit()
-        conn.close()
-        st.warning("L'historique a été entièrement vidé.")
-        st.rerun() # Rafraîchit la page pour montrer que c'est vide
+
 # --- CONFIGURATION ET BASE DE DONNÉES ---
 st.set_page_config(page_title="Gestion Tilleuls", layout="wide")
 
@@ -46,21 +36,17 @@ with tab1:
     with st.form("form_saisie", clear_on_submit=True):
         nom = st.selectbox("👤 Nom de l'agent", ["Thierry", "Marie", "Jean"])
         
-        # Définition des 3 colonnes pour l'interface
         col1, col2, col3 = st.columns(3)
-        
         with col1:
             st.subheader("🧼 Soins & Hygiène")
             m1 = st.checkbox("Toilette / Change")
             m2 = st.checkbox("Habillage")
             m3 = st.checkbox("Hydratation")
-            
         with col2:
             st.subheader("🍽️ Vie Sociale & Repas")
             m4 = st.checkbox("Aide au repas")
             m5 = st.checkbox("Animation")
             m6 = st.checkbox("Accompagnement")
-            
         with col3:
             st.subheader("😆 Animation Spécifique")
             m7 = st.checkbox("Revue de presse")
@@ -74,19 +60,13 @@ with tab1:
         
         if submit:
             maintenant = datetime.now()
-            
-            # Liste de TOUTES les missions pour le calcul du score
             checks = [m1, m2, m3, m4, m5, m6, m7, m8, m9]
             labels = ["Toilette", "Habillage", "Hydratation", "Repas", "Animation", "Accompagnement", "Revue de presse", "Chauffe-citron", "Loto"]
             
-            missions_list = []
-            for m, label in zip(checks, labels):
-                if m: missions_list.append(label)
-            
+            missions_list = [label for m, label in zip(checks, labels) if m]
             nb_missions = len(missions_list)
             missions_str = ", ".join(missions_list)
 
-            # --- LOGIQUE DES COULEURS (MANAGEMENT VISUEL) ---
             if nb_missions >= 5:
                 st.success(f"🌟 Excellent travail ! {nb_missions} missions accomplies.")
             elif 2 <= nb_missions <= 4:
@@ -94,48 +74,58 @@ with tab1:
             else:
                 st.error(f"ℹ️ Attention : seulement {nb_missions} mission(s) enregistrée(s).")
 
-            # Sauvegarde en base de données SQLite
             conn = sqlite3.connect('suivi_tilleuls.db')
             c = conn.cursor()
             c.execute('INSERT INTO interventions (date, heure, employe, missions, observations) VALUES (?, ?, ?, ?, ?)',
                       (maintenant.strftime("%d/%m/%Y"), maintenant.strftime("%H:%M"), nom, missions_str, obs))
             conn.commit()
             conn.close()
-            
-            st.toast(f"Données envoyées à la direction pour {nom} !",icon="👏")
+            st.toast(f"Données envoyées à la direction !")
 
 # ---------------------------------------------------------
 # ONGLET 2 : ESPACE DIRECTION (SÉCURISÉ)
 # ---------------------------------------------------------
 with tab2:
     st.header("🔐 Accès Restreint")
-    
-    # Mot de passe pour protéger les données
     password = st.text_input("Veuillez entrer le code d'accès direction", type="password")
     
     if password == "123":
         st.success("Accès autorisé")
         
         conn = sqlite3.connect('suivi_tilleuls.db')
-        # On récupère les données du plus récent au plus ancien
         df = pd.read_sql_query("SELECT * FROM interventions ORDER BY id DESC", conn)
         conn.close()
         
         if not df.empty:
-            st.subheader("Historique complet des interventions")
+            st.subheader("Historique des interventions")
             st.dataframe(df, use_container_width=True)
             
-            # Option de téléchargement pour le rapport de stage
+            # Export CSV
             csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Télécharger l'historique (CSV)",
-                data=csv,
-                file_name=f"export_tilleuls_{datetime.now().strftime('%d_%m_%Y')}.csv",
-                mime="text/csv"
-            )
-        else:
-            st.info("Aucune donnée enregistrée dans la base pour le moment.")
+            st.download_button("📥 Télécharger CSV", data=csv, file_name="export.csv", mime="text/csv")
             
+            # --- NOUVELLE ZONE DE SUPPRESSION CIBLÉE ---
+            st.divider()
+            st.subheader("🛠️ Maintenance de la base")
+            with st.expander("🗑️ Supprimer une ligne spécifique"):
+                id_a_supprimer = st.number_input("Entrez le numéro ID de la ligne à effacer", min_value=1, step=1)
+                confirmer = st.button("Confirmer la suppression définitive")
+                
+                if confirmer:
+                    conn = sqlite3.connect('suivi_tilleuls.db')
+                    c = conn.cursor()
+                    # On vérifie si l'ID existe avant de supprimer
+                    c.execute('SELECT id FROM interventions WHERE id = ?', (id_a_supprimer,))
+                    if c.fetchone():
+                        c.execute('DELETE FROM interventions WHERE id = ?', (id_a_supprimer,))
+                        conn.commit()
+                        st.success(f"La ligne n°{id_a_supprimer} a été supprimée.")
+                        st.rerun()
+                    else:
+                        st.error("Cet ID n'existe pas dans la base.")
+                    conn.close()
+        else:
+            st.info("Aucune donnée enregistrée.")
     elif password != "":
-        st.error("Code d'accès incorrect")
+        st.error("Code incorrect")
 
