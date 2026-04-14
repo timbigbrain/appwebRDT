@@ -2,7 +2,17 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 from datetime import datetime
-
+# --- BOUTON DE NETTOYAGE (DANGEREUX) ---
+        st.divider()
+        st.subheader("⚠️ Zone de maintenance")
+        if st.button("🗑️ Effacer tout l'historique (Action irréversible)"):
+            conn = sqlite3.connect('suivi_tilleuls.db')
+            c = conn.cursor()
+            c.execute('DELETE FROM interventions') # Supprime toutes les lignes
+            conn.commit()
+            conn.close()
+            st.warning("L'historique a été entièrement vidé.")
+            st.rerun() # Rafraîchit la page pour montrer que c'est vide
 # --- CONFIGURATION ET BASE DE DONNÉES ---
 st.set_page_config(page_title="Gestion Tilleuls", layout="wide")
 
@@ -128,14 +138,4 @@ with tab2:
             
     elif password != "":
         st.error("Code d'accès incorrect")
-# --- BOUTON DE NETTOYAGE (DANGEREUX) ---
-        st.divider()
-        st.subheader("⚠️ Zone de maintenance")
-        if st.button("🗑️ Effacer tout l'historique (Action irréversible)"):
-            conn = sqlite3.connect('suivi_tilleuls.db')
-            c = conn.cursor()
-            c.execute('DELETE FROM interventions') # Supprime toutes les lignes
-            conn.commit()
-            conn.close()
-            st.warning("L'historique a été entièrement vidé.")
-            st.rerun() # Rafraîchit la page pour montrer que c'est vide
+
