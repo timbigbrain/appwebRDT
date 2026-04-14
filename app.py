@@ -1,19 +1,28 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
+import sqlite3
 from datetime import datetime
 
-# --- CONFIGURATION ---
+# --- CONFIGURATION ET BASE DE DONNÉES ---
 st.set_page_config(page_title="Gestion Tilleuls", layout="wide")
 
-# Connexion au Google Sheet (utilise les Secrets que tu as remplis)
-conn = st.connection("gsheets", type=GSheetsConnection)
+def init_db():
+    conn = sqlite3.connect('suivi_tilleuls.db')
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS interventions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT,
+            heure TEXT,
+            employe TEXT,
+            missions TEXT,
+            observations TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-# Lecture des données pour l'historique
-try:
-    df_existant = conn.read(ttl=0)
-except:
-    df_existant = pd.DataFrame(columns=["Date", "Heure", "Employe", "Missions", "Observations"])
+init_db()
 
 # --- NAVIGATION PAR ONGLETS ---
 tab1, tab2 = st.tabs(["📝 Saisie Agent", "📊 Espace Direction"])
@@ -39,33 +48,35 @@ with tab1:
             m5 = st.checkbox("Animation")
             m6 = st.checkbox("Accompagnement")
             
-        obs = st.text_area("Observations particulières")
+        obs = st.text_area("Observations particulières (comportement, incident...)")
         
-        submit = st.form_submit_button("Valider l'enregistrement", use_container_width=True)
+        submit = st.form_submit_button("✅ Valider l'enregistrement", use_container_width=True)
         
         if submit:
             maintenant = datetime.now()
+            date_j = maintenant.strftime("%d/%m/%Y")
+            heure_j = maintenant.strftime("%H:%M")
             
             # Liste des missions
-            missions = []
-            for m, label in zip([m1, m2, m3, m4, m5, m6], ["Toilette", "Habillage", "Hydratation", "Repas", "Animation", "Accompagnement"]):
-                if m: missions.append(label)
+            missions_faites = []
+            labels = ["Toilette", "Habillage", "Hydratation", "Repas", "Animation", "Accompagnement"]
+            for m, label in zip([m1, m2, m3, m4, m5, m6], labels):
+                if m: missions_faites.append(label)
             
-            # Création de la nouvelle ligne
-            nouvelle_ligne = pd.DataFrame([{
-                "Date": maintenant.strftime("%d/%m/%Y"),
-                "Heure": maintenant.strftime("%H:%M"),
-                "Employe": nom,
-                "Missions": ", ".join(missions),
-                "Observations": obs
-            }])
+            missions_str = ", ".join(missions_faites)
+
+            # Sauvegarde en SQLite
+            conn = sqlite3.connect('suivi_tilleuls.db')
+            c = conn.cursor()
+            c.execute('''
+                INSERT INTO interventions (date, heure, employe, missions, observations)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (date_j, heure_j, nom, missions_str, obs))
+            conn.commit()
+            conn.close()
             
-            # Mise à jour Google Sheets
-            df_final = pd.concat([df_existant, nouvelle_ligne], ignore_index=True)
-            conn.update(data=df_final)
-            
-            st.success("Données enregistrées avec succès !")
-            st.balloons()
+            st.success(f"Enregistré avec succès ! (Date: {date_j} à {heure_j})")
+            st.snow()
 
 # ---------------------------------------------------------
 # ONGLET 2 : ESPACE DIRECTION
@@ -73,25 +84,28 @@ with tab1:
 with tab2:
     st.header("Tableau de bord de la Direction")
     
-    if not df_existant.empty:
-        st.write("Voici l'ensemble des interventions enregistrées :")
+    conn = sqlite3.connect('suivi_tilleuls.db')
+    df = pd.read_sql_query("SELECT * FROM interventions ORDER BY id DESC", conn)
+    conn.close()
+    
+    if not df.empty:
+        # Filtre par agent
+        agents = df["employe"].unique().tolist()
+        filtre = st.multiselect("Filtrer par agent :", agents)
         
-        # Filtre rapide par employé
-        filtre_nom = st.multiselect("Filtrer par agent", options=df_existant["Employe"].unique())
-        
-        df_display = df_existant
-        if filtre_nom:
-            df_display = df_existant[df_existant["Employe"].isin(filtre_nom)]
+        df_final = df
+        if filtre:
+            df_final = df[df["employe"].isin(filtre)]
             
-        st.dataframe(df_display, use_container_width=True)
+        st.dataframe(df_final, use_container_width=True)
         
-        # Bouton de téléchargement Excel
-        csv = df_display.to_csv(index=False).encode('utf-8')
+        # Bouton de téléchargement pour Excel
+        csv = df_final.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="📥 Télécharger l'historique en CSV",
+            label="📥 Télécharger l'historique en CSV (Excel)",
             data=csv,
             file_name=f"export_tilleuls_{datetime.now().strftime('%d_%m_%Y')}.csv",
             mime="text/csv",
         )
     else:
-        st.warning("Aucune donnée disponible pour le moment.")
+        st.info("Aucune donnée enregistrée pour le moment.")
