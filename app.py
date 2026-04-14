@@ -51,7 +51,7 @@ with tab1:
             st.subheader("😆 Animation")
             m7 = st.checkbox("Revue de presse")
             m8 = st.checkbox("Chauffe-citron")
-            m9 = st.checkbox("
+            m9 = st.checkbox("Loto")
         obs = st.text_area("Observations particulières")
         
         submit = st.form_submit_button("✅ Valider l'enregistrement", use_container_width=True)
