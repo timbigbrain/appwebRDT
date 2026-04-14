@@ -237,6 +237,4 @@ with tab2:
             st.download_button("📥 Télécharger CSV (Excel)", data=csv, file_name="export_tilleuls.csv", mime="text/csv")
      else:
             st.info("Aucune donnée enregistrée.")
-    elif password != "":
-        st.error("Code incorrect")
-# FIN DU FICHIER (ne rien ajouter ici)
+
