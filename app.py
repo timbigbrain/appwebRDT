@@ -34,7 +34,7 @@ with tab1:
     st.header("Formulaire de suivi quotidien")
     
     with st.form("form_saisie", clear_on_submit=True):
-        nom = st.selectbox("👤 Nom de l'agent", ["Jean", "Marie", "Paul", "Julie"])
+        nom = st.selectbox("👤 Nom de l'agent", ["Thierry", "Marie", "Jean"])
         
         col1, col2 = st.columns(2)
         with col1:
@@ -48,64 +48,65 @@ with tab1:
             m5 = st.checkbox("Animation")
             m6 = st.checkbox("Accompagnement")
             
-        obs = st.text_area("Observations particulières (comportement, incident...)")
+        obs = st.text_area("Observations particulières")
         
         submit = st.form_submit_button("✅ Valider l'enregistrement", use_container_width=True)
         
         if submit:
             maintenant = datetime.now()
-            date_j = maintenant.strftime("%d/%m/%Y")
-            heure_j = maintenant.strftime("%H:%M")
             
-            # Liste des missions
-            missions_faites = []
+            # Calcul du nombre de missions
+            missions_list = []
+            checks = [m1, m2, m3, m4, m5, m6]
             labels = ["Toilette", "Habillage", "Hydratation", "Repas", "Animation", "Accompagnement"]
-            for m, label in zip([m1, m2, m3, m4, m5, m6], labels):
-                if m: missions_faites.append(label)
             
-            missions_str = ", ".join(missions_faites)
+            for m, label in zip(checks, labels):
+                if m: missions_list.append(label)
+            
+            nb_missions = len(missions_list)
+            missions_str = ", ".join(missions_list)
 
-            # Sauvegarde en SQLite
+            # --- LOGIQUE DES COULEURS ---
+            if nb_missions >= 5:
+                st.success(f"🌟 Excellent travail ! {nb_missions} missions accomplies.")
+            elif 2 <= nb_missions <= 4:
+                st.warning(f"⚠️ Journée validée : {nb_missions} missions accomplies.")
+            else:
+                st.error(f"ℹ️ Attention : seulement {nb_missions} mission(s) enregistrée(s).")
+
+            # Sauvegarde
             conn = sqlite3.connect('suivi_tilleuls.db')
             c = conn.cursor()
-            c.execute('''
-                INSERT INTO interventions (date, heure, employe, missions, observations)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (date_j, heure_j, nom, missions_str, obs))
+            c.execute('INSERT INTO interventions (date, heure, employe, missions, observations) VALUES (?, ?, ?, ?, ?)',
+                      (maintenant.strftime("%d/%m/%Y"), maintenant.strftime("%H:%M"), nom, missions_str, obs))
             conn.commit()
             conn.close()
             
-            st.success(f"Enregistré avec succès ! (Date: {date_j} à {heure_j})")
-            st.snow()
+            st.toast(f"Données envoyées à la direction !")
 
 # ---------------------------------------------------------
-# ONGLET 2 : ESPACE DIRECTION
+# ONGLET 2 : ESPACE DIRECTION (SÉCURISÉ)
 # ---------------------------------------------------------
 with tab2:
-    st.header("Tableau de bord de la Direction")
+    st.header("🔐 Accès Restreint")
     
-    conn = sqlite3.connect('suivi_tilleuls.db')
-    df = pd.read_sql_query("SELECT * FROM interventions ORDER BY id DESC", conn)
-    conn.close()
+    # Système de mot de passe simple
+    password = st.text_input("Veuillez entrer le code d'accès direction", type="password")
     
-    if not df.empty:
-        # Filtre par agent
-        agents = df["employe"].unique().tolist()
-        filtre = st.multiselect("Filtrer par agent :", agents)
+    if password == "Tilleuls2024": # Tu peux changer le mot de passe ici
+        st.success("Accès autorisé")
         
-        df_final = df
-        if filtre:
-            df_final = df[df["employe"].isin(filtre)]
+        conn = sqlite3.connect('suivi_tilleuls.db')
+        df = pd.read_sql_query("SELECT * FROM interventions ORDER BY id DESC", conn)
+        conn.close()
+        
+        if not df.empty:
+            st.subheader("Historique des interventions")
+            st.dataframe(df, use_container_width=True)
             
-        st.dataframe(df_final, use_container_width=True)
-        
-        # Bouton de téléchargement pour Excel
-        csv = df_final.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Télécharger l'historique en CSV (Excel)",
-            data=csv,
-            file_name=f"export_tilleuls_{datetime.now().strftime('%d_%m_%Y')}.csv",
-            mime="text/csv",
-        )
-    else:
-        st.info("Aucune donnée enregistrée pour le moment.")
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Télécharger CSV", data=csv, file_name="export.csv", mime="text/csv")
+        else:
+            st.info("Aucune donnée.")
+    elif password != "":
+        st.error("Code incorrect")
