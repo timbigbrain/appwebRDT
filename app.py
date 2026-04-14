@@ -92,7 +92,7 @@ with tab1:
             conn.commit()
             conn.close()
             
-            st.toast(f"Données envoyées à la direction pour {nom} !")
+            st.toast(f"Données envoyées à la direction pour {nom} !",icon="👏")
 
 # ---------------------------------------------------------
 # ONGLET 2 : ESPACE DIRECTION (SÉCURISÉ)
