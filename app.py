@@ -47,7 +47,11 @@ with tab1:
             m4 = st.checkbox("Aide au repas")
             m5 = st.checkbox("Animation")
             m6 = st.checkbox("Accompagnement")
-            
+        with col3:
+            st.subheader("😆 Animation")
+            m7 = st.checkbox("Revue de presse")
+            m8 = st.checkbox("Chauffe-citron")
+            m9 = st.checkbox("
         obs = st.text_area("Observations particulières")
         
         submit = st.form_submit_button("✅ Valider l'enregistrement", use_container_width=True)
@@ -93,7 +97,7 @@ with tab2:
     # Système de mot de passe simple
     password = st.text_input("Veuillez entrer le code d'accès direction", type="password")
     
-    if password == "Tilleuls2024": # Tu peux changer le mot de passe ici
+    if password == "123": # Tu peux changer le mot de passe ici
         st.success("Accès autorisé")
         
         conn = sqlite3.connect('suivi_tilleuls.db')
