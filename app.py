@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 from datetime import datetime
+import plotly.express as px # <--- Nouveau : pour le graphique
 
 # --- CONFIGURATION ET BASE DE DONNÉES ---
 st.set_page_config(page_title="Gestion Tilleuls", layout="wide")
@@ -97,35 +98,55 @@ with tab2:
         conn.close()
         
         if not df.empty:
-            st.subheader("Historique des interventions")
+            # --- NOUVEAU : GRAPHIQUE DE PROGRESSION ---
+            st.divider()
+            st.subheader("📈 Progression de Thierry")
+            
+            # On filtre les données pour Thierry uniquement
+            df_thierry = df[df['employe'] == "Thierry"].copy()
+            
+            if not df_thierry.empty:
+                # On compte le nombre de missions pour chaque ligne
+                # On sépare la chaîne de caractères (virgules) et on compte les éléments
+                df_thierry['nb_missions'] = df_thierry['missions'].apply(lambda x: len(x.split(',')) if x else 0)
+                
+                # Création du graphique avec Plotly
+                fig = px.line(
+                    df_thierry.sort_values('id'), # Tri par ID pour l'ordre chronologique
+                    x='date', 
+                    y='nb_missions',
+                    title="Nombre de missions réalisées par jour",
+                    markers=True,
+                    line_shape="spline",
+                    color_discrete_sequence=["#2E7D32"] # Un beau vert
+                )
+                
+                fig.update_layout(yaxis_range=[0, 10]) # On bloque l'échelle de 0 à 10
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Pas encore de données pour Thierry pour générer le graphique.")
+
+            st.divider()
+            st.subheader("📋 Historique complet")
             st.dataframe(df, use_container_width=True)
             
             # Export CSV
             csv = df.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Télécharger CSV", data=csv, file_name="export.csv", mime="text/csv")
             
-            # --- NOUVELLE ZONE DE SUPPRESSION CIBLÉE ---
+            # --- ZONE DE SUPPRESSION ---
             st.divider()
-            st.subheader("🛠️ Maintenance de la base")
             with st.expander("🗑️ Supprimer une ligne spécifique"):
-                id_a_supprimer = st.number_input("Entrez le numéro ID de la ligne à effacer", min_value=1, step=1)
-                confirmer = st.button("Confirmer la suppression définitive")
-                
-                if confirmer:
+                id_a_supprimer = st.number_input("ID à effacer", min_value=1, step=1)
+                if st.button("Confirmer la suppression"):
                     conn = sqlite3.connect('suivi_tilleuls.db')
                     c = conn.cursor()
-                    # On vérifie si l'ID existe avant de supprimer
-                    c.execute('SELECT id FROM interventions WHERE id = ?', (id_a_supprimer,))
-                    if c.fetchone():
-                        c.execute('DELETE FROM interventions WHERE id = ?', (id_a_supprimer,))
-                        conn.commit()
-                        st.success(f"La ligne n°{id_a_supprimer} a été supprimée.")
-                        st.rerun()
-                    else:
-                        st.error("Cet ID n'existe pas dans la base.")
+                    c.execute('DELETE FROM interventions WHERE id = ?', (id_a_supprimer,))
+                    conn.commit()
                     conn.close()
+                    st.success(f"Ligne {id_a_supprimer} supprimée.")
+                    st.rerun()
         else:
             st.info("Aucune donnée enregistrée.")
     elif password != "":
         st.error("Code incorrect")
-
