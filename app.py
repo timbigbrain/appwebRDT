@@ -132,7 +132,7 @@ with tab2:
             
             # Export CSV
             csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Télécharger CSV", data=csv, file_name="export.csv", mime="text/csv")
+            st.download_button("📥 Télécharger CSV (1 fois par semaine)", data=csv, file_name="export.csv", mime="text/csv")
             
             # --- ZONE DE SUPPRESSION ---
             st.divider()
