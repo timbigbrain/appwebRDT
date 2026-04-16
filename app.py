@@ -6,6 +6,8 @@ import plotly.express as px # <--- Nouveau : pour le graphique
 
 # --- CONFIGURATION ET BASE DE DONNÉES ---
 st.set_page_config(page_title="Gestion Tilleuls", layout="wide")
+if "keep_alive" not in st.session_state:
+    st.session_state["keep_alive"] = datetime.now()
 
 def init_db():
     conn = sqlite3.connect('suivi_tilleuls.db')
