@@ -37,7 +37,7 @@ with tab1:
     st.header("Formulaire de suivi quotidien")
     
     with st.form("form_saisie", clear_on_submit=True):
-        nom = st.selectbox("👤 Nom de l'agent", ["Thierry", "Marie", "Jean"])
+        nom = st.selectbox("👤 Nom de l'agent", ["Thierry"])
         
         col1, col2, col3 = st.columns(3)
         with col1:
